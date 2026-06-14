@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { loadGiftPreview, loadWines, loadWinesAsync, saveWines } from '../lib/storage';
+import { sampleWines } from '../data/sampleWines';
+import { loadWines, loadWinesAsync, saveWines } from '../lib/storage';
 import type { Wine } from '../types/wine';
 
 export function useCollection() {
@@ -26,7 +27,12 @@ export function useCollection() {
 
   const deleteWine = (id: string) => updateWines(wines.filter((wine) => wine.id !== id));
 
-  const loadPreview = () => setWines(loadGiftPreview());
+  const loadPreview = () => {
+    const sampleIds = new Set(sampleWines.map((wine) => wine.id));
+    const next = [...sampleWines, ...wines.filter((wine) => !sampleIds.has(wine.id))];
+    updateWines(next);
+    return { added: sampleWines.filter((wine) => !wines.some((item) => item.id === wine.id)).length, total: next.length };
+  };
 
   const analytics = useMemo(() => {
     const ratings = wines.flatMap((wine) => wine.tastings.map((tasting) => tasting.rating));

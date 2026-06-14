@@ -2,13 +2,13 @@
   "name": "The 俊毅 Collection",
   "short_name": "俊毅珍藏",
   "description": "A personal cellar, tasting journal, and wine archive created by Yimo for Father's Day 2026.",
-  "start_url": "/",
+  "start_url": ".",
   "display": "standalone",
   "background_color": "#120d0a",
   "theme_color": "#120d0a",
   "icons": [
     {
-      "src": "/cellar-hero.png",
+      "src": "cellar-hero.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"

@@ -129,11 +129,15 @@ textarea {
 }
 
 .wine-photo {
-  @apply grid h-24 w-20 shrink-0 place-items-center overflow-hidden border border-gold/25 bg-cellar-950/90 text-gold;
+  @apply grid h-36 w-28 shrink-0 place-items-center overflow-hidden border border-gold/25 bg-cellar-950/90 text-gold transition hover:border-gold;
 }
 
 .wine-photo img {
-  @apply h-full w-full object-cover;
+  @apply h-full w-full object-contain;
+}
+
+.wine-photo-button {
+  @apply h-full w-full cursor-zoom-in;
 }
 
 .metric {
@@ -172,11 +176,39 @@ textarea {
 }
 
 .photo-drop {
-  @apply grid min-h-48 cursor-pointer place-items-center overflow-hidden border border-dashed border-gold/45 bg-cellar-950/90 p-4 text-center text-sm font-semibold uppercase tracking-[0.14em] text-gold transition hover:bg-cellar-950;
+  @apply grid min-h-80 place-items-center overflow-hidden border border-dashed border-gold/45 bg-cellar-950/90 p-4 text-center text-sm font-semibold uppercase tracking-[0.14em] text-gold;
 }
 
 .photo-drop img {
-  @apply h-full max-h-64 w-full object-cover;
+  @apply h-full max-h-[520px] w-full object-contain;
+}
+
+.photo-preview-button {
+  @apply h-full min-h-72 w-full cursor-zoom-in;
+}
+
+.photo-actions {
+  @apply mt-3 flex flex-wrap gap-2;
+}
+
+.image-fallback {
+  @apply grid h-full min-h-72 place-items-center bg-cellar-950 text-center text-sm font-semibold uppercase tracking-[0.14em] text-gold;
+}
+
+.toast {
+  @apply fixed right-4 top-24 z-[70] border border-gold/45 bg-cellar-950 px-4 py-3 text-sm font-semibold text-gold shadow-glow dark:bg-cellar-900;
+}
+
+.lightbox {
+  @apply fixed inset-0 z-[90] grid place-items-center bg-cellar-950/90 p-4 backdrop-blur;
+}
+
+.lightbox-panel {
+  @apply relative max-h-[92vh] w-full max-w-4xl border border-gold/35 bg-cellar-950 p-4 shadow-glow;
+}
+
+.lightbox img {
+  @apply mx-auto max-h-[82vh] w-full object-contain;
 }
 
 .empty-state {
@@ -232,7 +264,6 @@ textarea {
 
 .legacy-hero {
   @apply border border-gold/35 bg-cellar-950 p-8 text-linen shadow-glow;
-  background-image: linear-gradient(135deg, rgba(125, 31, 47, 0.45), rgba(18, 13, 10, 0.92)), url('/cellar-hero.png');
   background-size: cover;
   background-position: center;
 }

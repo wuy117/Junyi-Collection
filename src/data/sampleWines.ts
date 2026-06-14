@@ -4,7 +4,7 @@ import type { Wine } from '../types/wine';
 export const sampleWines: Wine[] = [
   {
     id: 'latour-2010',
-    photo: '',
+    photo: 'cellar-hero.png',
     name: makeText('Château Latour', '拉图酒庄', 'Château Latour'),
     producer: 'Château Latour',
     vintage: '2010',
@@ -30,7 +30,7 @@ export const sampleWines: Wine[] = [
     location: 'Cellar A · Top shelf',
     rarity: 'collectible',
     consumed: false,
-    sharedWith: ['Jay', 'Yimo', 'Mum'],
+    sharedWith: ['Jay', 'Yimo', 'Susan'],
     tastings: [
       {
         id: 'taste-latour',
@@ -52,14 +52,14 @@ export const sampleWines: Wine[] = [
           'Yimo a offert à Jay la première entrée de la collection, avec la promesse que chaque bouteille porterait une histoire.',
         ),
         location: 'Home',
-        people: ['Jay', 'Yimo', 'Mum'],
+        people: ['Jay', 'Yimo', 'Susan'],
         photos: [],
       },
     ],
   },
   {
     id: 'sassicaia-2018',
-    photo: '',
+    photo: 'cellar-hero.png',
     name: makeText('Sassicaia', '西施佳雅', 'Sassicaia'),
     producer: 'Tenuta San Guido',
     vintage: '2018',
@@ -83,7 +83,7 @@ export const sampleWines: Wine[] = [
   },
   {
     id: 'krug-2008',
-    photo: '',
+    photo: 'cellar-hero.png',
     name: makeText('Krug Vintage', '库克年份香槟', 'Krug Vintage'),
     producer: 'Krug',
     vintage: '2008',
@@ -101,7 +101,7 @@ export const sampleWines: Wine[] = [
     location: 'Wine fridge · Champagne',
     rarity: 'veryRare',
     consumed: true,
-    sharedWith: ['Jay', 'Yimo', 'Mum', 'Friends'],
+    sharedWith: ['Jay', 'Yimo', 'Susan', 'Friends'],
     tastings: [
       {
         id: 'taste-krug',
@@ -119,7 +119,7 @@ export const sampleWines: Wine[] = [
         title: makeText('New Year toast', '新年举杯', 'Toast du Nouvel An'),
         story: makeText('Everyone paused for the same bright, quiet second.', '所有人在同一个明亮而安静的瞬间停住了。', 'Tout le monde s’est arrêté dans la même seconde lumineuse et calme.'),
         location: 'London',
-        people: ['Jay', 'Yimo', 'Mum', 'Friends'],
+        people: ['Jay', 'Yimo', 'Susan', 'Friends'],
         photos: [],
       },
     ],

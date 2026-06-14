@@ -1,4 +1,3 @@
-import { sampleWines } from '../data/sampleWines';
 import type { Language, Wine } from '../types/wine';
 
 const WINE_KEY = 'junyi.collection.wines';
@@ -34,11 +33,6 @@ export function saveWines(wines: Wine[]) {
   memoryWines = wines;
   safeSet(WINE_KEY, JSON.stringify(wines));
   void idbSet(WINE_KEY, wines);
-}
-
-export function loadGiftPreview(): Wine[] {
-  saveWines(sampleWines);
-  return sampleWines;
 }
 
 export function getStoredLanguage(): Language {

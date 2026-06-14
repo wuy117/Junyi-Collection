@@ -96,6 +96,7 @@ const tagLabels: Record<string, Record<Language, string>> = {
 
 const occasionTags = Object.keys(tagLabels);
 const regions = ['Bordeaux', 'Burgundy', 'Champagne', 'Rhône Valley', 'Tuscany', 'Piedmont', 'Rioja', 'Napa Valley', 'Barossa Valley', 'Mendoza'];
+const heroImageUrl = `${import.meta.env.BASE_URL}cellar-hero.png`;
 const regionPositions: Record<string, { x: string; y: string }> = {
   Bordeaux: { x: '47%', y: '42%' },
   Burgundy: { x: '50%', y: '38%' },
@@ -151,6 +152,8 @@ export function App() {
   const [conciergeAnswer, setConciergeAnswer] = useState('');
   const [conciergeError, setConciergeError] = useState('');
   const [conciergeLoading, setConciergeLoading] = useState(false);
+  const [toast, setToast] = useState('');
+  const [lightboxImage, setLightboxImage] = useState<{ src: string; alt: string } | null>(null);
 
   useEffect(() => {
     document.documentElement.lang = language;
@@ -206,7 +209,7 @@ export function App() {
         uploadWineImage(file),
       ]);
       setIdentifyStatus(t('readingWineDetails', language));
-      setDraft(aiResultToDraft(identified, photo));
+      setDraft(aiResultToDraft(identified, photo, language));
       setIsAiDraft(true);
       setFormOpen(true);
       if (identified.confidenceScore < 0.35) {
@@ -241,6 +244,12 @@ export function App() {
     setFormOpen(false);
     setDraft({ ...emptyDraft });
     setIsAiDraft(false);
+  }
+
+  function handleLoadPreview() {
+    loadPreview();
+    setToast(t('giftPreviewLoaded', language));
+    window.setTimeout(() => setToast(''), 2400);
   }
 
   function addTasting(wineId: string, tasting: TastingEntry) {
@@ -296,7 +305,8 @@ export function App() {
       </header>
 
       <main>
-        <Hero language={language} wines={wines} loadPreview={loadPreview} />
+        {toast && <div className="toast" role="status">{toast}</div>}
+        <Hero language={language} wines={wines} loadPreview={handleLoadPreview} />
         <StatusRibbon language={language} />
         <div className="mx-auto grid max-w-7xl gap-6 px-4 py-8 lg:grid-cols-[1.2fr_0.8fr]">
           <section className="space-y-6">
@@ -311,6 +321,7 @@ export function App() {
                   const photo = await uploadWineImage(file);
                   setDraft((current) => ({ ...current, photo }));
                 }}
+                onImageOpen={(src) => setLightboxImage({ src, alt: draft.name || t('bottlePhoto', language) })}
                 onSave={saveDraft}
                 onCancel={() => setFormOpen(false)}
               />
@@ -331,7 +342,7 @@ export function App() {
                       <option value="rating">{t('sortRating', language)}</option>
                     </select>
                   </div>
-                  {wines.length === 0 ? <EmptyState language={language} loadPreview={loadPreview} onManual={startManualWine} /> : <WineGrid wines={filteredWines} language={language} onEdit={editWine} onDelete={deleteWine} />}
+                  {wines.length === 0 ? <EmptyState language={language} loadPreview={handleLoadPreview} onManual={startManualWine} /> : <WineGrid wines={filteredWines} language={language} onEdit={editWine} onDelete={deleteWine} onImageOpen={(src, alt) => setLightboxImage({ src, alt })} />}
                 </motion.div>
               )}
               {section === 'journal' && <Journal key="journal" wines={wines} language={language} onAddTasting={addTasting} />}
@@ -347,6 +358,7 @@ export function App() {
           </aside>
         </div>
       </main>
+      {lightboxImage && <ImageLightbox image={lightboxImage} onClose={() => setLightboxImage(null)} />}
     </div>
   );
 }
@@ -356,9 +368,14 @@ function NavButton({ item, active, language, onClick }: { item: (typeof navItems
 }
 
 function Hero({ language, wines, loadPreview }: { language: Language; wines: Wine[]; loadPreview: () => void }) {
+  const [imageFailed, setImageFailed] = useState(false);
   return (
     <section className="relative isolate min-h-[560px] overflow-hidden">
-      <img src="/cellar-hero.png" alt="" className="absolute inset-0 h-full w-full object-cover" />
+      {imageFailed ? (
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_24%_20%,rgba(217,180,108,.22),transparent_28%),linear-gradient(135deg,#1d1510,#7d1f2f_48%,#120d0a)]" aria-hidden="true" />
+      ) : (
+        <img src={heroImageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" onError={() => setImageFailed(true)} />
+      )}
       <div className="absolute inset-0 bg-gradient-to-r from-cellar-950 via-cellar-950/72 to-cellar-950/20" />
       <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-linen dark:from-cellar-950" />
       <div className="relative mx-auto flex min-h-[560px] max-w-7xl items-center px-4 py-16">
@@ -414,8 +431,10 @@ function UploadButton({ icon: Icon, label, accept, capture, onFile }: { icon: ty
   return <label className="manual-button cursor-pointer"><Icon size={18} /><span>{label}</span><input type="file" className="sr-only" accept={accept} capture={capture} onChange={(event) => onFile(event.target.files?.[0] || null)} /></label>;
 }
 
-function WineForm({ draft, language, isAiDraft, setDraft, onPhoto, onSave, onCancel }: { draft: WineDraft; language: Language; isAiDraft: boolean; setDraft: React.Dispatch<React.SetStateAction<WineDraft>>; onPhoto: (file: File) => void; onSave: () => void; onCancel: () => void }) {
+function WineForm({ draft, language, isAiDraft, setDraft, onPhoto, onImageOpen, onSave, onCancel }: { draft: WineDraft; language: Language; isAiDraft: boolean; setDraft: React.Dispatch<React.SetStateAction<WineDraft>>; onPhoto: (file: File) => void; onImageOpen: (src: string) => void; onSave: () => void; onCancel: () => void }) {
   const set = (key: keyof WineDraft, value: string | boolean) => setDraft((current) => ({ ...current, [key]: value }));
+  const [photoFailed, setPhotoFailed] = useState(false);
+  useEffect(() => setPhotoFailed(false), [draft.photo]);
   return (
     <section className="lux-panel">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -423,11 +442,35 @@ function WineForm({ draft, language, isAiDraft, setDraft, onPhoto, onSave, onCan
         {isAiDraft && <span className="badge badge-gold">{t('aiReviewed', language)}</span>}
       </div>
       {isAiDraft && <p className="mt-3 text-sm text-cellar-700 dark:text-linen/70">{t('aiReviewBody', language)}</p>}
-      <div className="mt-5 grid gap-4 md:grid-cols-[160px_1fr]">
-        <label className="photo-drop">
-          {draft.photo ? <img src={draft.photo} alt="" /> : <><Camera size={28} /><span>{t('bottlePhoto', language)}</span></>}
-          <input type="file" className="sr-only" accept="image/*" onChange={(event) => event.target.files?.[0] && onPhoto(event.target.files[0])} />
-        </label>
+      <div className="mt-5 grid gap-5 md:grid-cols-[minmax(260px,340px)_1fr]">
+        <div>
+          <div className="photo-drop">
+            {draft.photo && !photoFailed ? (
+              <button type="button" className="photo-preview-button" onClick={() => onImageOpen(draft.photo || '')} aria-label={t('enlargeImage', language)}>
+                <img src={draft.photo} alt={draft.name || t('bottlePhoto', language)} onError={() => setPhotoFailed(true)} />
+              </button>
+            ) : draft.photo && photoFailed ? (
+              <div className="image-fallback"><Camera size={28} /><span>{t('imageUnavailable', language)}</span></div>
+            ) : (
+              <label className="grid h-full min-h-72 cursor-pointer place-items-center gap-3">
+                <Camera size={34} />
+                <span>{t('bottlePhoto', language)}</span>
+                <input type="file" className="sr-only" accept="image/*" onChange={(event) => event.target.files?.[0] && onPhoto(event.target.files[0])} />
+              </label>
+            )}
+          </div>
+          {draft.photo && (
+            <div className="photo-actions">
+              <button className="small-button" type="button" onClick={() => onImageOpen(draft.photo || '')}><Camera size={15} />{t('enlargeImage', language)}</button>
+              <label className="small-button cursor-pointer"><Upload size={15} />{t('changePhoto', language)}<input type="file" className="sr-only" accept="image/*" onChange={(event) => {
+                if (event.target.files?.[0]) {
+                  setPhotoFailed(false);
+                  onPhoto(event.target.files[0]);
+                }
+              }} /></label>
+            </div>
+          )}
+        </div>
         <div className="grid gap-3 sm:grid-cols-2">
           <TextField label={t('name', language)} value={draft.name} onChange={(value) => set('name', value)} required />
           <TextField label={t('producer', language)} value={draft.producer} onChange={(value) => set('producer', value)} />
@@ -439,6 +482,7 @@ function WineForm({ draft, language, isAiDraft, setDraft, onPhoto, onSave, onCan
           <label className="form-label">{t('foodPairings', language)}<textarea value={draft.foodPairings} onChange={(event) => set('foodPairings', event.target.value)} /></label>
           <TextField label={t('drinkingWindow', language)} value={draft.drinkingWindow} onChange={(value) => set('drinkingWindow', value)} />
           <TextField label={t('priceRange', language)} value={draft.estimatedPriceRange} onChange={(value) => set('estimatedPriceRange', value)} />
+          <p className="text-xs text-cellar-700 dark:text-linen/60 sm:col-span-2">{t('priceNotLive', language)}</p>
           <TextField label={`${t('marketValue', language)} (${t('optionalNumber', language)})`} value={draft.estimatedValue} onChange={(value) => set('estimatedValue', value)} type="number" />
           <label className="form-label">{t('style', language)}<select value={draft.style} onChange={(event) => set('style', event.target.value)}>{Object.keys(styleLabels).map((style) => <option key={style} value={style}>{styleLabels[style as WineStyle][language]}</option>)}</select></label>
           <label className="form-label">{t('rarity', language)}<select value={draft.rarity} onChange={(event) => set('rarity', event.target.value)}>{Object.keys(rarityLabels).map((rarity) => <option key={rarity} value={rarity}>{rarityLabels[rarity as Rarity][language]}</option>)}</select></label>
@@ -458,13 +502,13 @@ function WineForm({ draft, language, isAiDraft, setDraft, onPhoto, onSave, onCan
   );
 }
 
-function WineGrid({ wines, language, onEdit, onDelete }: { wines: Wine[]; language: Language; onEdit: (wine: Wine) => void; onDelete: (id: string) => void }) {
+function WineGrid({ wines, language, onEdit, onDelete, onImageOpen }: { wines: Wine[]; language: Language; onEdit: (wine: Wine) => void; onDelete: (id: string) => void; onImageOpen: (src: string, alt: string) => void }) {
   return (
     <div className="grid gap-4 md:grid-cols-2">
       {wines.map((wine) => (
         <article key={wine.id} className="wine-card">
-          <div className="flex gap-4">
-            <div className="wine-photo">{wine.photo ? <img src={wine.photo} alt={text(wine.name, language)} /> : <WineIcon size={36} />}</div>
+          <div className="flex flex-col gap-4 sm:flex-row">
+            <div className="wine-photo">{wine.photo ? <button type="button" className="wine-photo-button" onClick={() => onImageOpen(wine.photo || '', text(wine.name, language))} aria-label={t('enlargeImage', language)}><img src={wine.photo} alt={text(wine.name, language)} /></button> : <WineIcon size={36} />}</div>
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>
@@ -526,7 +570,7 @@ function Memories({ wines, language, onAddMemory }: { wines: Wine[]; language: L
   const [title, setTitle] = useState('');
   const [story, setStory] = useState('');
   const [location, setLocation] = useState('');
-  const [people, setPeople] = useState('Jay, Yimo');
+  const [people, setPeople] = useState('Jay, Yimo, Susan');
   useEffect(() => { if (!selectedWine && wines[0]) setSelectedWine(wines[0].id); }, [selectedWine, wines]);
   function save() {
     if (!selectedWine || !title.trim()) return;
@@ -638,7 +682,7 @@ function Legacy({ wines, language }: { wines: Wine[]; language: Language }) {
   const memorable = wines.flatMap((wine) => wine.memories.map((memory) => ({ wine, memory }))).slice(0, 4);
   return (
     <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-5">
-      <div className="legacy-hero">
+      <div className="legacy-hero" style={{ backgroundImage: `linear-gradient(135deg, rgba(125, 31, 47, 0.45), rgba(18, 13, 10, 0.92)), url(${heroImageUrl})` }}>
         <Crown size={30} />
         <h2>{t('legacyTitle', language)}</h2>
         <p>{language === 'zh' ? '把年份、团圆、庆祝与父子之间的心意，珍藏成可以慢慢回看的家族故事。' : language === 'fr' ? 'Préserver les millésimes, les célébrations et les gestes d’un fils pour son père comme une histoire familiale à relire.' : 'Preserving vintages, celebrations, and a son’s gift to his father as a family story worth returning to.'}</p>
@@ -652,6 +696,17 @@ function Legacy({ wines, language }: { wines: Wine[]; language: Language }) {
 
 function EmptyState({ language, loadPreview, onManual }: { language: Language; loadPreview: () => void; onManual: () => void }) {
   return <div className="empty-state"><WineIcon size={42} /><h3>{t('emptyTitle', language)}</h3><p>{t('emptyBody', language)}</p><div className="mt-5 flex flex-wrap justify-center gap-3"><button className="primary-button" onClick={onManual}><Plus size={18} />{t('addManual', language)}</button><button className="manual-button" onClick={loadPreview}><Sparkles size={18} />{t('sampleData', language)}</button></div></div>;
+}
+
+function ImageLightbox({ image, onClose }: { image: { src: string; alt: string }; onClose: () => void }) {
+  return (
+    <div className="lightbox" role="dialog" aria-modal="true" aria-label={image.alt} onClick={onClose}>
+      <div className="lightbox-panel" onClick={(event) => event.stopPropagation()}>
+        <button className="icon-button absolute right-3 top-3" type="button" onClick={onClose} aria-label="Close"><X size={18} /></button>
+        <img src={image.src} alt={image.alt} />
+      </div>
+    </div>
+  );
 }
 
 function EntryForm({ language, wines, selectedWine, setSelectedWine, children }: { language: Language; wines: Wine[]; selectedWine: string; setSelectedWine: (value: string) => void; children: React.ReactNode }) {
@@ -761,30 +816,39 @@ function splitList(value: string) {
   return value.split(',').map((item) => item.trim()).filter(Boolean);
 }
 
-function aiResultToDraft(result: AiWineIdentification, photo: string): WineDraft {
+function aiResultToDraft(result: AiWineIdentification, photo: string, language: Language): WineDraft {
+  const vintageUnknown = isUnknownVintage(result.vintage);
+  const warnings = [
+    result.warningsOrUncertainty,
+    vintageUnknown ? t('vintageUnclearPrompt', language) : '',
+  ].filter(Boolean).join(' ');
   return {
     ...emptyDraft,
     photo,
     name: result.wineName,
     producer: result.producer,
-    vintage: result.vintage,
+    vintage: vintageUnknown ? 'Unknown' : result.vintage,
     country: result.country,
     region: result.region,
     grape: result.grapeVarieties,
     style: result.wineStyle,
     estimatedPriceRange: result.estimatedPriceRange,
-    confidenceScore: String(result.confidenceScore),
+    confidenceScore: String(vintageUnknown ? Math.max(0, Number((result.confidenceScore - 0.15).toFixed(2))) : result.confidenceScore),
     visibleLabelText: result.visibleLabelText,
-    warningsOrUncertainty: result.warningsOrUncertainty,
-    drinkingWindow: result.drinkingWindow,
+    warningsOrUncertainty: warnings,
+    drinkingWindow: vintageUnknown ? t('dependsOnVintage', language) : result.drinkingWindow,
     tastingProfile: result.tastingProfile,
     foodPairings: result.foodPairings,
     facts: result.interestingFacts,
-    notes: result.warningsOrUncertainty,
+    notes: warnings,
     rarity: result.rarityLevel,
     location: 'Review shelf',
     sharedWith: 'Jay',
   };
+}
+
+function isUnknownVintage(vintage: string) {
+  return !vintage.trim() || /unknown|unclear|not visible|n\/a|non visible|inconnu|不详|未知|看不清/i.test(vintage);
 }
 
 function wineToSummary(wine: Wine, language: Language): WineSummary {
