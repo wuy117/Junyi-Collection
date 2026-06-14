@@ -40,6 +40,10 @@ export interface Wine {
   grape: TranslationText;
   style: WineStyle;
   estimatedValue: number;
+  estimatedPriceRange?: string;
+  confidenceScore?: number;
+  visibleLabelText?: string;
+  warningsOrUncertainty?: string;
   drinkingWindow: TranslationText;
   tastingProfile: TranslationText;
   foodPairings: TranslationText;

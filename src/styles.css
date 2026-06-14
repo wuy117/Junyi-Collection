@@ -18,7 +18,8 @@ body {
 
 button,
 input,
-select {
+select,
+textarea {
   font: inherit;
 }
 
@@ -63,6 +64,14 @@ select {
 
 .manual-button {
   @apply border-cellar-950/15 bg-white/45 text-cellar-950 hover:border-gold hover:bg-gold/15 dark:border-linen/15 dark:bg-white/5 dark:text-linen;
+}
+
+.small-button {
+  @apply inline-flex min-h-9 items-center gap-2 border border-cellar-950/15 bg-white/45 px-3 py-1.5 text-sm font-semibold text-cellar-950 transition hover:border-gold hover:bg-gold/15 dark:border-linen/15 dark:bg-white/5 dark:text-linen;
+}
+
+.small-button.danger {
+  @apply hover:border-claret hover:bg-claret/10 hover:text-claret;
 }
 
 .lux-panel,
@@ -142,6 +151,32 @@ select {
 .tag,
 .status-pill {
   @apply inline-flex items-center gap-2 border border-cellar-950/10 bg-white/45 px-3 py-1.5 text-sm dark:border-linen/10 dark:bg-white/5;
+}
+
+.tag-active {
+  @apply border-gold bg-gold/15 text-cellar-950 dark:text-linen;
+}
+
+.form-label {
+  @apply grid gap-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-cellar-700 dark:text-linen/60;
+}
+
+.form-label input,
+.form-label select,
+.form-label textarea {
+  @apply min-h-11 w-full border border-cellar-950/15 bg-white/50 px-3 py-2 text-sm normal-case tracking-normal text-cellar-950 outline-none transition focus:border-gold dark:border-linen/15 dark:bg-white/5 dark:text-linen;
+}
+
+.form-label textarea {
+  @apply min-h-24 resize-y;
+}
+
+.photo-drop {
+  @apply grid min-h-48 cursor-pointer place-items-center overflow-hidden border border-dashed border-gold/45 bg-cellar-950/90 p-4 text-center text-sm font-semibold uppercase tracking-[0.14em] text-gold transition hover:bg-cellar-950;
+}
+
+.photo-drop img {
+  @apply h-full max-h-64 w-full object-cover;
 }
 
 .empty-state {

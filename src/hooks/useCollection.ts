@@ -1,9 +1,19 @@
-import { useMemo, useState } from 'react';
-import { loadGiftPreview, loadWines, saveWines } from '../lib/storage';
+import { useEffect, useMemo, useState } from 'react';
+import { loadGiftPreview, loadWines, loadWinesAsync, saveWines } from '../lib/storage';
 import type { Wine } from '../types/wine';
 
 export function useCollection() {
   const [wines, setWines] = useState<Wine[]>(() => loadWines());
+
+  useEffect(() => {
+    let active = true;
+    loadWinesAsync().then((savedWines) => {
+      if (active) setWines(savedWines);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const updateWines = (next: Wine[]) => {
     setWines(next);
@@ -11,6 +21,10 @@ export function useCollection() {
   };
 
   const addWine = (wine: Wine) => updateWines([wine, ...wines]);
+
+  const updateWine = (wine: Wine) => updateWines(wines.map((item) => (item.id === wine.id ? wine : item)));
+
+  const deleteWine = (id: string) => updateWines(wines.filter((wine) => wine.id !== id));
 
   const loadPreview = () => setWines(loadGiftPreview());
 
@@ -34,7 +48,7 @@ export function useCollection() {
     };
   }, [wines]);
 
-  return { wines, analytics, addWine, loadPreview };
+  return { wines, analytics, addWine, updateWine, deleteWine, loadPreview };
 }
 
 function mode(values: string[]) {

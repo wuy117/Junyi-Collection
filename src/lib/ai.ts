@@ -1,54 +1,100 @@
-import { makeText } from './i18n';
-import type { Language, TranslationText, Wine } from '../types/wine';
+import type { Language, Rarity, WineStyle } from '../types/wine';
 
-const dictionary: Record<Language, Record<string, string>> = {
-  en: {
-    generated: 'Generated from the uploaded image. Review details before saving.',
-  },
-  zh: {
-    generated: '根据上传图片生成。保存前请核对信息。',
-  },
-  fr: {
-    generated: 'Généré à partir de l’image importée. Vérifiez les détails avant enregistrement.',
-  },
-};
+const AI_API_BASE_URL = (import.meta.env.VITE_AI_API_BASE_URL || '/api').replace(/\/$/, '');
 
-export function translateAiDescription(source: string): TranslationText {
-  return makeText(
-    source,
-    `AI 翻译：${source}`,
-    `Traduction IA : ${source}`,
-  );
+export interface AiWineIdentification {
+  wineName: string;
+  producer: string;
+  vintage: string;
+  region: string;
+  country: string;
+  grapeVarieties: string;
+  wineStyle: WineStyle;
+  confidenceScore: number;
+  visibleLabelText: string;
+  estimatedPriceRange: string;
+  rarityLevel: Rarity;
+  drinkingWindow: string;
+  tastingProfile: string;
+  foodPairings: string;
+  interestingFacts: string;
+  warningsOrUncertainty: string;
 }
 
-export function identifyWineFromUpload(fileName: string): Wine {
-  const lowered = fileName.toLowerCase();
-  const isChampagne = lowered.includes('champagne') || lowered.includes('krug');
-  const region = isChampagne ? makeText('Champagne', '香槟区', 'Champagne') : makeText('Bordeaux', '波尔多', 'Bordeaux');
-  const style = isChampagne ? 'sparkling' : 'red';
+export interface ConciergeResponse {
+  answer: string;
+  suggestedWineIds: string[];
+  warningsOrUncertainty: string;
+}
 
-  return {
-    id: crypto.randomUUID(),
-    photo: '',
-    name: isChampagne ? makeText('Identified Champagne', '识别出的香槟', 'Champagne identifié') : makeText('Identified Bordeaux', '识别出的波尔多', 'Bordeaux identifié'),
-    producer: isChampagne ? 'Maison producer pending' : 'Château producer pending',
-    vintage: '2018',
-    country: makeText('France', '法国', 'France'),
-    region,
-    grape: isChampagne ? makeText('Chardonnay, Pinot Noir', '霞多丽、黑皮诺', 'Chardonnay, pinot noir') : makeText('Cabernet Sauvignon blend', '赤霞珠混酿', 'Assemblage cabernet sauvignon'),
-    style,
-    estimatedValue: isChampagne ? 180 : 95,
-    drinkingWindow: makeText('Now–2035', '现在–2035 年', 'Maintenant–2035'),
-    tastingProfile: translateAiDescription(isChampagne ? 'Citrus, toast, fine bubbles, bright acidity.' : 'Dark fruit, cedar, spice, firm tannins.'),
-    foodPairings: isChampagne ? makeText('Seafood, roast chicken, soft cheeses.', '海鲜、烤鸡、软质奶酪。', 'Fruits de mer, poulet rôti, fromages doux.') : makeText('Steak, lamb, mushroom dishes.', '牛排、羊排、蘑菇菜肴。', 'Bœuf, agneau, plats aux champignons.'),
-    facts: makeText(dictionary.en.generated, dictionary.zh.generated, dictionary.fr.generated),
-    dateAdded: new Date().toISOString().slice(0, 10),
-    notes: makeText('Imported by AI identification.', '由 AI 识别导入。', 'Importé par identification IA.'),
-    location: 'Review shelf',
-    rarity: 'uncommon',
-    consumed: false,
-    sharedWith: ['Jay'],
-    tastings: [],
-    memories: [],
-  };
+export async function identifyWineImage(file: File, language: Language): Promise<AiWineIdentification> {
+  const imageDataUrl = await readFileAsDataUrl(file);
+  const response = await fetch(aiEndpoint('/identify-wine'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      imageDataUrl,
+      fileName: file.name,
+      preferredLanguage: language,
+    }),
+  });
+
+  const data = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(data?.error || 'AI service unavailable. Please try again later.');
+  }
+  return data as AiWineIdentification;
+}
+
+export async function askCellarConcierge(question: string, wines: WineSummary[], language: Language): Promise<ConciergeResponse> {
+  const response = await fetch(aiEndpoint('/cellar-concierge'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      question,
+      collection: wines,
+      preferredLanguage: language,
+    }),
+  });
+
+  const data = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(data?.error || 'AI service unavailable. Please try again later.');
+  }
+  return data as ConciergeResponse;
+}
+
+export type WineSummary = {
+  id: string;
+  name: string;
+  producer: string;
+  vintage: string;
+  country: string;
+  region: string;
+  grape: string;
+  style: string;
+  estimatedPriceRange?: string;
+  estimatedValue?: number;
+  drinkingWindow: string;
+  rating: number;
+  notes: string;
+  location: string;
+  rarity: string;
+  sharedWith: string[];
+  tastings: Array<{ rating: number; notes: string; tags: string[]; date: string }>;
+  memories: Array<{ title: string; story: string; people: string[]; date: string }>;
+};
+
+function readFileAsDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+
+function aiEndpoint(path: string) {
+  if (AI_API_BASE_URL.endsWith('/api')) return `${AI_API_BASE_URL}${path}`;
+  return `${AI_API_BASE_URL}/api${path}`;
 }
