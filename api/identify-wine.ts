@@ -1,4 +1,4 @@
-import { callOpenAIJson, languageName, methodNotAllowed, PublicApiError, readJsonBody, sendJson, validateLanguage } from './_openai';
+import { callOpenAIJson, languageName, methodNotAllowed, PublicApiError, readJsonBody, sendJson, validateLanguage } from './_openai.js';
 
 const wineSchema = {
   type: 'object',

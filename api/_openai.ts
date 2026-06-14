@@ -1,4 +1,7 @@
 const DEFAULT_PROVIDER = 'openai-compatible';
+declare const Buffer: any;
+declare const process: any;
+
 const PROVIDER_DEFAULTS: Record<string, { baseUrl?: string; model: string }> = {
   qwen: { baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1', model: 'qwen-vl-plus' },
   zhipu: { baseUrl: 'https://open.bigmodel.cn/api/paas/v4', model: 'glm-4v-plus' },
@@ -15,7 +18,7 @@ export async function readJsonBody(req: any) {
   if (req.body && typeof req.body === 'object') return req.body;
   if (typeof req.body === 'string') return JSON.parse(req.body || '{}');
 
-  const chunks: Buffer[] = [];
+  const chunks: any[] = [];
   for await (const chunk of req) {
     chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
   }
