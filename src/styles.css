@@ -245,16 +245,28 @@ label:focus-within {
   @apply mt-2 max-w-lg text-cellar-700 dark:text-linen/70;
 }
 
+.panel-empty {
+  @apply mt-5 grid min-h-36 place-items-center border border-dashed border-gold/30 bg-white/40 p-6 text-center text-cellar-700 dark:bg-white/[0.035] dark:text-linen/70;
+}
+
+.panel-empty svg {
+  @apply mb-3 text-gold;
+}
+
+.panel-empty p {
+  @apply max-w-sm text-sm leading-relaxed;
+}
+
 .wine-map {
   position: relative;
   height: 250px;
   overflow: hidden;
   border: 1px solid rgba(217, 180, 108, 0.28);
   background:
-    radial-gradient(circle at 24% 46%, rgba(116, 128, 100, 0.55) 0 8%, transparent 9%),
-    radial-gradient(circle at 50% 42%, rgba(217, 180, 108, 0.34) 0 12%, transparent 13%),
-    radial-gradient(circle at 82% 70%, rgba(116, 128, 100, 0.45) 0 8%, transparent 9%),
+    linear-gradient(rgba(243, 234, 219, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(243, 234, 219, 0.035) 1px, transparent 1px),
     linear-gradient(135deg, rgba(29, 21, 16, 0.92), rgba(61, 42, 32, 0.88));
+  background-size: 24px 24px, 24px 24px, auto;
 }
 
 .wine-map::before {
@@ -264,8 +276,22 @@ label:focus-within {
   border: 1px solid rgba(243, 234, 219, 0.1);
 }
 
+.map-silhouette {
+  position: absolute;
+  inset: 20px 12px;
+  z-index: 0;
+  height: calc(100% - 40px);
+  width: calc(100% - 24px);
+}
+
+.map-silhouette path {
+  fill: rgba(217, 180, 108, 0.18);
+  stroke: rgba(243, 234, 219, 0.2);
+  stroke-width: 0.55;
+}
+
 .map-pin {
-  @apply absolute grid h-7 w-7 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-linen/30 bg-cellar-950/80 transition;
+  @apply absolute z-10 grid h-7 w-7 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-linen/30 bg-cellar-950/80 transition focus:outline-none focus:ring-2 focus:ring-gold focus:ring-offset-2 focus:ring-offset-cellar-950;
 }
 
 .map-pin span {
@@ -282,6 +308,10 @@ label:focus-within {
 
 .map-pin-selected {
   @apply scale-125;
+}
+
+.map-region-list {
+  @apply mt-4 flex flex-wrap gap-2;
 }
 
 .legacy-hero {

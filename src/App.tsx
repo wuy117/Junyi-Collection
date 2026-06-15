@@ -6,7 +6,6 @@ import {
   Camera,
   Crown,
   Edit3,
-  Globe2,
   Heart,
   Languages,
   MapPinned,
@@ -28,7 +27,7 @@ import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer,
 import { askCellarConcierge, identifyWineImage, type AiWineIdentification, type WineSummary } from './lib/ai';
 import { languages, makeText, t, text } from './lib/i18n';
 import { getStoredLanguage, getStoredTheme, storeLanguage, storeTheme } from './lib/storage';
-import { supabase, uploadWineImage } from './lib/supabase';
+import { uploadWineImage } from './lib/supabase';
 import { useCollection } from './hooks/useCollection';
 import type { Language, Memory, Rarity, TastingEntry, TranslationText, Wine, WineStyle } from './types/wine';
 
@@ -198,7 +197,6 @@ export function App() {
   const sharedWithYimo = wines.filter((wine) => wine.sharedWith.includes('Yimo'));
   const familyShared = wines.filter((wine) => wine.sharedWith.length > 2);
   const favouriteBottle = wines.find((wine) => wine.favourite);
-  const regionWines = wines.filter((wine) => wine.region.en === selectedRegion);
 
   async function handleIdentify(file: File | null) {
     if (!file) return;
@@ -308,7 +306,6 @@ export function App() {
       <main>
         {toast && <div className="toast" role="status">{toast}</div>}
         <Hero language={language} wines={wines} favouriteBottle={favouriteBottle} />
-        <StatusRibbon language={language} />
         <FatherMessage />
         <div className="mx-auto grid max-w-7xl gap-6 px-4 py-8 lg:grid-cols-[1.2fr_0.8fr]">
           <section className="space-y-6">
@@ -356,7 +353,7 @@ export function App() {
           <aside className="space-y-6">
             <Analytics language={language} analytics={analytics} valueByRegion={valueByRegion} rarityData={rarityData} />
             <FamilyDashboard language={language} sharedWithYimo={sharedWithYimo} familyShared={familyShared} favouriteBottle={favouriteBottle} />
-            <WineMap language={language} wines={wines} selectedRegion={selectedRegion} setSelectedRegion={setSelectedRegion} regionWines={regionWines} />
+            <WineMap language={language} wines={wines} selectedRegion={selectedRegion} setSelectedRegion={setSelectedRegion} />
           </aside>
         </div>
       </main>
@@ -407,18 +404,6 @@ function FatherMessage() {
         <p>{fatherMessage}</p>
       </div>
     </section>
-  );
-}
-
-function StatusRibbon({ language }: { language: Language }) {
-  return (
-    <div className="border-y border-cellar-950/10 bg-white/55 dark:border-linen/10 dark:bg-white/[0.04]">
-      <div className="mx-auto flex max-w-7xl flex-wrap gap-3 px-4 py-3 text-sm text-cellar-700 dark:text-linen/75">
-        <span className="status-pill"><Globe2 size={15} />{t('secureAiBackend', language)}</span>
-        <span className="status-pill"><Sparkles size={15} />Supabase {supabase ? t('configured', language) : t('notConfigured', language)}</span>
-        <span className="status-pill"><Languages size={15} />English · 简体中文 · Français</span>
-      </div>
-    </div>
   );
 }
 
@@ -643,23 +628,38 @@ function Concierge({ language, question, answer, error, loading, setQuestion, as
 }
 
 function Analytics({ language, analytics, valueByRegion, rarityData }: { language: Language; analytics: ReturnType<typeof useCollection>['analytics']; valueByRegion: Array<{ name: string; value: number }>; rarityData: Array<{ name: string; value: number }> }) {
+  const hasWines = analytics.total > 0;
   return (
     <section className="lux-panel">
-      <div className="flex flex-wrap items-center justify-between gap-3"><SectionTitle icon={BarChart3} title={t('analyticsTitle', language)} /><span className="badge badge-gold">{t('functional', language)}</span></div>
-      <p className="mt-3 text-sm text-cellar-700 dark:text-linen/70">{t('estimatedNotice', language)}</p>
-      <div className="mt-5 grid grid-cols-2 gap-3">
-        <Metric label={t('totalWines', language)} value={analytics.total} />
-        <Metric label={`${t('collectionValue', language)} (${t('estimate', language)})`} value={`£${analytics.value.toLocaleString()}`} />
-        <Metric label={t('averageRating', language)} value={analytics.averageRating.toFixed(1)} />
-        <Metric label={t('consumedYear', language)} value={analytics.consumedThisYear} />
-      </div>
-      <div className="mt-4 space-y-2 text-sm text-cellar-700 dark:text-linen/70">
-        <p>{t('favouriteCountry', language)}: {analytics.favouriteCountry}</p>
-        <p>{t('favouriteGrape', language)}: {analytics.favouriteGrape}</p>
-        <p>{t('commonRegion', language)}: {analytics.commonRegion}</p>
-      </div>
-      <div className="mt-5 h-48"><ResponsiveContainer width="100%" height="100%"><BarChart data={valueByRegion}><CartesianGrid strokeDasharray="3 3" stroke="rgba(217,180,108,0.18)" /><XAxis dataKey="name" tick={{ fill: 'currentColor', fontSize: 11 }} /><YAxis tick={{ fill: 'currentColor', fontSize: 11 }} /><Tooltip contentStyle={{ background: '#1d1510', border: '1px solid rgba(217,180,108,.35)', color: '#f3eadb' }} /><Bar dataKey="value" fill="#d9b46c" radius={[4, 4, 0, 0]} /></BarChart></ResponsiveContainer></div>
-      <div className="mt-3 h-40"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={rarityData} dataKey="value" nameKey="name" innerRadius={38} outerRadius={64}>{rarityData.map((_, index) => <Cell key={index} fill={['#d9b46c', '#9b2f43', '#748064', '#c7794a', '#f3eadb'][index % 5]} />)}</Pie><Tooltip contentStyle={{ background: '#1d1510', border: '1px solid rgba(217,180,108,.35)', color: '#f3eadb' }} /></PieChart></ResponsiveContainer></div>
+      <SectionTitle icon={BarChart3} title={t('analyticsTitle', language)} />
+      {!hasWines ? (
+        <PanelEmpty>{t('analyticsEmpty', language)}</PanelEmpty>
+      ) : (
+        <>
+          <p className="mt-3 text-sm text-cellar-700 dark:text-linen/70">{t('estimatedNotice', language)}</p>
+          <div className="mt-5 grid grid-cols-2 gap-3">
+            <Metric label={t('totalWines', language)} value={analytics.total} />
+            <Metric label={`${t('collectionValue', language)} (${t('estimate', language)})`} value={`£${analytics.value.toLocaleString()}`} />
+            <Metric label={t('averageRating', language)} value={analytics.averageRating.toFixed(1)} />
+            <Metric label={t('consumedYear', language)} value={analytics.consumedThisYear} />
+          </div>
+          <div className="mt-4 space-y-2 text-sm text-cellar-700 dark:text-linen/70">
+            <p>{t('favouriteCountry', language)}: {analytics.favouriteCountry}</p>
+            <p>{t('favouriteGrape', language)}: {analytics.favouriteGrape}</p>
+            <p>{t('commonRegion', language)}: {analytics.commonRegion}</p>
+          </div>
+          {valueByRegion.length > 0 ? (
+            <div className="mt-5 h-48"><ResponsiveContainer width="100%" height="100%"><BarChart data={valueByRegion}><CartesianGrid strokeDasharray="3 3" stroke="rgba(217,180,108,0.18)" /><XAxis dataKey="name" tick={{ fill: 'currentColor', fontSize: 11 }} /><YAxis tick={{ fill: 'currentColor', fontSize: 11 }} /><Tooltip contentStyle={{ background: '#1d1510', border: '1px solid rgba(217,180,108,.35)', color: '#f3eadb' }} /><Bar dataKey="value" fill="#d9b46c" radius={[4, 4, 0, 0]} /></BarChart></ResponsiveContainer></div>
+          ) : (
+            <PanelEmpty>{t('chartsEmpty', language)}</PanelEmpty>
+          )}
+          {rarityData.length > 0 ? (
+            <div className="mt-3 h-40"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={rarityData} dataKey="value" nameKey="name" innerRadius={38} outerRadius={64}>{rarityData.map((_, index) => <Cell key={index} fill={['#d9b46c', '#9b2f43', '#748064', '#c7794a', '#f3eadb'][index % 5]} />)}</Pie><Tooltip contentStyle={{ background: '#1d1510', border: '1px solid rgba(217,180,108,.35)', color: '#f3eadb' }} /></PieChart></ResponsiveContainer></div>
+          ) : (
+            <PanelEmpty>{t('chartsEmpty', language)}</PanelEmpty>
+          )}
+        </>
+      )}
     </section>
   );
 }
@@ -681,20 +681,53 @@ function FamilyDashboard({ language, sharedWithYimo, familyShared, favouriteBott
   );
 }
 
-function WineMap({ language, wines, selectedRegion, setSelectedRegion, regionWines }: { language: Language; wines: Wine[]; selectedRegion: string; setSelectedRegion: (region: string) => void; regionWines: Wine[] }) {
-  const represented = new Set(wines.map((wine) => wine.region.en));
+function WineMap({ language, wines, selectedRegion, setSelectedRegion }: { language: Language; wines: Wine[]; selectedRegion: string; setSelectedRegion: (region: string) => void }) {
+  const representedRegions = Array.from(new Set(wines.map((wine) => wine.region.en).filter(Boolean)));
+  const pinnedRegions = representedRegions.filter((region) => regionPositions[region]);
+  const activeRegion = representedRegions.includes(selectedRegion) ? selectedRegion : representedRegions[0];
+  const activeRegionWines = activeRegion ? wines.filter((wine) => wine.region.en === activeRegion) : [];
+
+  if (representedRegions.length === 0) {
+    return (
+      <section className="lux-panel">
+        <SectionTitle icon={MapPinned} title={t('mapTitle', language)} />
+        <PanelEmpty>{t('mapEmpty', language)}</PanelEmpty>
+      </section>
+    );
+  }
+
   return (
     <section className="lux-panel">
-      <div className="flex flex-wrap items-center justify-between gap-3"><SectionTitle icon={MapPinned} title={t('mapTitle', language)} /><span className="badge badge-gold">{t('functional', language)}</span></div>
+      <SectionTitle icon={MapPinned} title={t('mapTitle', language)} />
+      <p className="mt-3 text-sm text-cellar-700 dark:text-linen/70">{t('mapBody', language)}</p>
       <div className="wine-map mt-5">
-        {regions.map((region) => <button key={region} className={`map-pin ${represented.has(region) ? 'map-pin-active' : ''} ${selectedRegion === region ? 'map-pin-selected' : ''}`} style={{ left: regionPositions[region].x, top: regionPositions[region].y }} onClick={() => setSelectedRegion(region)} aria-label={region}><span /></button>)}
+        <RegionMapSilhouette />
+        {pinnedRegions.map((region) => <button key={region} className={`map-pin map-pin-active ${activeRegion === region ? 'map-pin-selected' : ''}`} style={{ left: regionPositions[region].x, top: regionPositions[region].y }} onClick={() => setSelectedRegion(region)} aria-label={region}><span /></button>)}
       </div>
       <div className="mt-4">
-        <p className="font-serif text-xl">{selectedRegion}</p>
-        <p className="text-sm text-cellar-700 dark:text-linen/70">{regionWines.length ? regionWines.map((wine) => text(wine.name, language)).join(' · ') : language === 'zh' ? '尚未收藏该产区酒款' : language === 'fr' ? 'Aucun vin de cette région' : 'No wines from this region yet'}</p>
+        <p className="font-serif text-xl">{activeRegion}</p>
+        <p className="text-sm text-cellar-700 dark:text-linen/70">{activeRegionWines.length ? activeRegionWines.map((wine) => text(wine.name, language)).join(' · ') : t('noRegionWines', language)}</p>
+        <div className="map-region-list">
+          {representedRegions.map((region) => <button key={region} className={`tag ${activeRegion === region ? 'tag-active' : ''}`} onClick={() => setSelectedRegion(region)}>{region}</button>)}
+        </div>
       </div>
     </section>
   );
+}
+
+function RegionMapSilhouette() {
+  return (
+    <svg className="map-silhouette" viewBox="0 0 100 54" aria-hidden="true" focusable="false">
+      <path d="M10 22c5-8 16-10 24-7 5 2 8 6 7 11-1 4-6 6-11 6H17c-6 0-10-4-7-10Z" />
+      <path d="M39 18c7-6 18-7 28-3 8 3 12 9 10 15-2 7-12 8-21 8-8 0-17-1-20-7-2-5-1-9 3-13Z" />
+      <path d="M69 34c6-4 15-3 19 2 4 4 2 10-4 12-6 3-15 1-18-4-3-4-2-8 3-10Z" />
+      <path d="M26 36c5 2 9 7 8 12-1 5-7 5-11 1-4-4-4-11 3-13Z" />
+    </svg>
+  );
+}
+
+function PanelEmpty({ children }: { children: React.ReactNode }) {
+  return <div className="panel-empty"><WineIcon size={30} /><p>{children}</p></div>;
 }
 
 function Legacy({ wines, language }: { wines: Wine[]; language: Language }) {

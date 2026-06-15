@@ -38,7 +38,8 @@ export function useCollection() {
     const byCountry = mode(wines.map((wine) => wine.country.en));
     const byGrape = mode(wines.map((wine) => wine.grape.en));
     const byRegion = mode(wines.map((wine) => wine.region.en));
-    const consumedThisYear = wines.filter((wine) => wine.consumed && wine.tastings.some((tasting) => tasting.date.startsWith('2026'))).length;
+    const currentYear = String(new Date().getFullYear());
+    const consumedThisYear = wines.filter((wine) => wine.consumed && wine.tastings.some((tasting) => tasting.date.startsWith(currentYear))).length;
 
     return {
       total: wines.length,

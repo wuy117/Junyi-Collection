@@ -106,7 +106,32 @@ export const copy: Dictionary = {
   },
   thinkingWithCellar: { en: 'Consulting the cellar...', zh: '正在查阅酒窖…', fr: 'Consultation de la cave…' },
   analyticsTitle: { en: 'Collection Analytics', zh: '珍藏分析', fr: 'Analyse de collection' },
-  mapTitle: { en: 'World Wine Map', zh: '世界葡萄酒地图', fr: 'Carte mondiale du vin' },
+  analyticsEmpty: {
+    en: 'Add your first wine to unlock analytics.',
+    zh: '添加第一瓶酒，即可开启珍藏分析。',
+    fr: 'Ajoutez votre premier vin pour débloquer les analyses.',
+  },
+  chartsEmpty: {
+    en: 'Charts will appear as your collection grows.',
+    zh: '随着珍藏增长，图表会显示在这里。',
+    fr: 'Les graphiques apparaîtront au fil de la collection.',
+  },
+  mapTitle: { en: 'Wine Region Map', zh: '葡萄酒产区图', fr: 'Carte des régions viticoles' },
+  mapBody: {
+    en: 'A stylised view of wine regions represented in Jay’s saved collection.',
+    zh: '以风格化方式展示俊毅已收藏酒款覆盖的产区。',
+    fr: 'Une visualisation stylisée des régions présentes dans la collection enregistrée de Jay.',
+  },
+  mapEmpty: {
+    en: 'Wine regions will appear here as your collection grows.',
+    zh: '随着珍藏增长，葡萄酒产区会显示在这里。',
+    fr: 'Les régions viticoles apparaîtront ici au fil de la collection.',
+  },
+  noRegionWines: {
+    en: 'No wines from this region yet.',
+    zh: '尚未收藏该产区酒款。',
+    fr: 'Aucun vin de cette région pour le moment.',
+  },
   legacyTitle: { en: 'Cellar Legacy', zh: '珍藏传承', fr: 'Héritage de la Cave' },
   totalWines: { en: 'Total wines', zh: '总瓶数', fr: 'Total de vins' },
   collectionValue: { en: 'Collection value', zh: '珍藏价值', fr: 'Valeur de la collection' },
@@ -137,12 +162,6 @@ export const copy: Dictionary = {
     zh: '年份不清晰。请输入年份以完善适饮期。',
     fr: 'Le millésime est incertain. Saisissez-le pour préciser la fenêtre de dégustation.',
   },
-  workingLocal: { en: 'Working locally', zh: '本地可用', fr: 'Fonctionne localement' },
-  secureAiBackend: { en: 'Secure AI backend', zh: '安全 AI 后端', fr: 'Backend IA sécurisé' },
-  comingSoon: { en: 'Coming soon', zh: '即将推出', fr: 'Bientôt' },
-  localOnly: { en: 'Local storage', zh: '本地存储', fr: 'Stockage local' },
-  configured: { en: 'Configured', zh: '已配置', fr: 'Configuré' },
-  notConfigured: { en: 'Not configured', zh: '未配置', fr: 'Non configuré' },
   addTasting: { en: 'Add tasting note', zh: '添加品酒记录', fr: 'Ajouter une note' },
   saveTasting: { en: 'Save tasting', zh: '保存品酒记录', fr: 'Enregistrer la note' },
   rating: { en: 'Rating', zh: '评分', fr: 'Note' },
@@ -159,7 +178,6 @@ export const copy: Dictionary = {
     zh: '还没有回忆。当一瓶酒成为故事的一部分时，可以记录一段家庭回忆。',
     fr: 'Aucun souvenir pour le moment. Ajoutez un souvenir familial lorsqu’une bouteille entre dans l’histoire.',
   },
-  functional: { en: 'Working', zh: '可用', fr: 'Fonctionnel' },
   estimate: { en: 'Estimate', zh: '估算', fr: 'Estimation' },
   readyToDrink: { en: 'Ready to drink', zh: '适饮中', fr: 'Prêt à boire' },
   marketValue: { en: 'Market value', zh: '市场估值', fr: 'Valeur estimée' },
@@ -169,8 +187,6 @@ export const copy: Dictionary = {
   facts: { en: 'Interesting facts', zh: '酒款故事', fr: 'Faits intéressants' },
   darkMode: { en: 'Dark mode', zh: '深色模式', fr: 'Mode sombre' },
   lightMode: { en: 'Light mode', zh: '浅色模式', fr: 'Mode clair' },
-  offline: { en: 'Offline-ready', zh: '离线可用', fr: 'Disponible hors ligne' },
-  supabaseReady: { en: 'Supabase-ready', zh: '可连接 Supabase', fr: 'Prêt pour Supabase' },
 };
 
 export function t(key: keyof typeof copy, language: Language) {
