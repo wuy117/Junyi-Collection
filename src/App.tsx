@@ -4,7 +4,6 @@ import {
   BookOpen,
   Bot,
   Camera,
-  ChevronRight,
   Crown,
   Edit3,
   Globe2,
@@ -59,6 +58,8 @@ type WineDraft = {
   consumed: boolean;
   sharedWith: string;
 };
+
+const fatherMessage = '父亲节快乐爸爸！！！这是我为你量身定做的酒识别软件，还可以存储识别过的酒而且有专门的AI侍酒师回答问题。这样子喝酒就没有选择困难症而且可以查询到酒的信息！爱你-谟谟';
 
 const navItems: Array<{ id: Section; label: keyof typeof import('./lib/i18n').copy; icon: typeof WineIcon }> = [
   { id: 'cellar', label: 'navCellar', icon: WineIcon },
@@ -135,7 +136,7 @@ const emptyDraft: WineDraft = {
 };
 
 export function App() {
-  const { wines, analytics, addWine, updateWine, deleteWine, loadPreview } = useCollection();
+  const { wines, analytics, addWine, updateWine, deleteWine, toggleFavourite } = useCollection();
   const [language, setLanguage] = useState<Language>(() => getStoredLanguage());
   const [theme, setTheme] = useState<'dark' | 'light'>(() => getStoredTheme());
   const [section, setSection] = useState<Section>('cellar');
@@ -196,7 +197,7 @@ export function App() {
 
   const sharedWithYimo = wines.filter((wine) => wine.sharedWith.includes('Yimo'));
   const familyShared = wines.filter((wine) => wine.sharedWith.length > 2);
-  const favouriteShared = [...wines].sort((a, b) => averageWineRating(b) - averageWineRating(a))[0];
+  const favouriteBottle = wines.find((wine) => wine.favourite);
   const regionWines = wines.filter((wine) => wine.region.en === selectedRegion);
 
   async function handleIdentify(file: File | null) {
@@ -241,15 +242,15 @@ export function App() {
     if (!wine.name.en.trim()) return;
     if (draft.id) updateWine(wine);
     else addWine(wine);
+    setToast(draft.id ? t('wineUpdated', language) : t('wineSaved', language));
+    window.setTimeout(() => setToast(''), 2200);
     setFormOpen(false);
     setDraft({ ...emptyDraft });
     setIsAiDraft(false);
   }
 
-  function handleLoadPreview() {
-    loadPreview();
-    setToast(t('giftPreviewLoaded', language));
-    window.setTimeout(() => setToast(''), 2400);
+  function confirmDelete(id: string) {
+    if (window.confirm(t('deleteConfirm', language))) deleteWine(id);
   }
 
   function addTasting(wineId: string, tasting: TastingEntry) {
@@ -290,7 +291,7 @@ export function App() {
           <div className="flex items-center gap-2">
             <div className="flex items-center border border-cellar-950/15 bg-white/50 dark:border-linen/15 dark:bg-white/5">
               <Languages size={16} className="ml-2 text-gold" />
-              <select value={language} onChange={(event) => setLanguage(event.target.value as Language)} className="control-select w-[78px] sm:w-[122px]" aria-label="Language">
+              <select value={language} onChange={(event) => setLanguage(event.target.value as Language)} className="control-select w-[78px] sm:w-[122px]" aria-label={t('languageSwitcher', language)}>
                 {languages.map((item) => <option key={item.code} value={item.code}>{item.short} {item.label}</option>)}
               </select>
             </div>
@@ -306,8 +307,9 @@ export function App() {
 
       <main>
         {toast && <div className="toast" role="status">{toast}</div>}
-        <Hero language={language} wines={wines} loadPreview={handleLoadPreview} />
+        <Hero language={language} wines={wines} favouriteBottle={favouriteBottle} />
         <StatusRibbon language={language} />
+        <FatherMessage />
         <div className="mx-auto grid max-w-7xl gap-6 px-4 py-8 lg:grid-cols-[1.2fr_0.8fr]">
           <section className="space-y-6">
             <ScanPanel language={language} status={identifyStatus} error={identifyError} onIdentify={handleIdentify} onManual={startManualWine} />
@@ -342,7 +344,7 @@ export function App() {
                       <option value="rating">{t('sortRating', language)}</option>
                     </select>
                   </div>
-                  {wines.length === 0 ? <EmptyState language={language} loadPreview={handleLoadPreview} onManual={startManualWine} /> : <WineGrid wines={filteredWines} language={language} onEdit={editWine} onDelete={deleteWine} onImageOpen={(src, alt) => setLightboxImage({ src, alt })} />}
+                  {wines.length === 0 ? <EmptyState language={language} onManual={startManualWine} /> : <WineGrid wines={filteredWines} language={language} onEdit={editWine} onDelete={confirmDelete} onToggleFavourite={toggleFavourite} onImageOpen={(src, alt) => setLightboxImage({ src, alt })} />}
                 </motion.div>
               )}
               {section === 'journal' && <Journal key="journal" wines={wines} language={language} onAddTasting={addTasting} />}
@@ -353,12 +355,12 @@ export function App() {
           </section>
           <aside className="space-y-6">
             <Analytics language={language} analytics={analytics} valueByRegion={valueByRegion} rarityData={rarityData} />
-            <FamilyDashboard language={language} sharedWithYimo={sharedWithYimo} familyShared={familyShared} favouriteShared={favouriteShared} />
+            <FamilyDashboard language={language} sharedWithYimo={sharedWithYimo} familyShared={familyShared} favouriteBottle={favouriteBottle} />
             <WineMap language={language} wines={wines} selectedRegion={selectedRegion} setSelectedRegion={setSelectedRegion} regionWines={regionWines} />
           </aside>
         </div>
       </main>
-      {lightboxImage && <ImageLightbox image={lightboxImage} onClose={() => setLightboxImage(null)} />}
+      {lightboxImage && <ImageLightbox image={lightboxImage} language={language} onClose={() => setLightboxImage(null)} />}
     </div>
   );
 }
@@ -367,7 +369,7 @@ function NavButton({ item, active, language, onClick }: { item: (typeof navItems
   return <button onClick={onClick} className={`nav-button shrink-0 ${active ? 'nav-button-active' : ''}`}><item.icon size={16} />{t(item.label, language)}</button>;
 }
 
-function Hero({ language, wines, loadPreview }: { language: Language; wines: Wine[]; loadPreview: () => void }) {
+function Hero({ language, wines, favouriteBottle }: { language: Language; wines: Wine[]; favouriteBottle?: Wine }) {
   const [imageFailed, setImageFailed] = useState(false);
   return (
     <section className="relative isolate min-h-[560px] overflow-hidden">
@@ -380,16 +382,29 @@ function Hero({ language, wines, loadPreview }: { language: Language; wines: Win
       <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-linen dark:from-cellar-950" />
       <div className="relative mx-auto flex min-h-[560px] max-w-7xl items-center px-4 py-16">
         <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }} className="max-w-3xl text-linen">
-          <p className="mb-5 inline-flex items-center gap-2 border border-gold/45 bg-cellar-950/40 px-3 py-2 text-xs uppercase tracking-[0.26em] text-gold"><Sparkles size={14} />Father’s Day 2026</p>
+          <p className="mb-5 inline-flex items-center gap-2 border border-gold/45 bg-cellar-950/40 px-3 py-2 text-xs uppercase tracking-[0.26em] text-gold"><Sparkles size={14} />{t('fatherDayLabel', language)}</p>
           <h1 className="font-serif text-5xl leading-[0.95] sm:text-7xl lg:text-8xl">{t('heroTitle', language)}</h1>
           <p className="mt-6 max-w-2xl text-xl text-linen/85 sm:text-2xl">{t('heroSubtitle', language)}</p>
           <p className="mt-4 font-serif text-2xl text-gold">{t('heroGift', language)}</p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <button className="primary-button" onClick={loadPreview}><Plus size={18} />{t('sampleData', language)}</button>
-            <a href="#cellar" className="secondary-button"><ChevronRight size={18} />{t('navCellar', language)}</a>
+          <div className="mt-8">
+            <a href="#cellar" className="secondary-button"><WineIcon size={18} />{t('navCellar', language)}</a>
+          </div>
+          <div className="mt-8 inline-flex max-w-full flex-col border border-gold/35 bg-cellar-950/50 p-4 backdrop-blur-sm">
+            <span className="text-xs uppercase tracking-[0.16em] text-gold">{t('favouriteBottle', language)}</span>
+            <strong className="mt-1 break-words font-serif text-2xl text-linen">{favouriteBottle ? text(favouriteBottle.name, language) : t('noFavouriteBottle', language)}</strong>
           </div>
           {wines.length > 0 && <p className="mt-4 text-sm text-linen/70">{t('estimatedNotice', language)}</p>}
         </motion.div>
+      </div>
+    </section>
+  );
+}
+
+function FatherMessage() {
+  return (
+    <section className="mx-auto max-w-7xl px-4 pt-8">
+      <div className="father-message">
+        <p>{fatherMessage}</p>
       </div>
     </section>
   );
@@ -418,7 +433,7 @@ function ScanPanel({ language, status, error, onIdentify, onManual }: { language
       {status && <p className="mt-4 border border-gold/30 bg-gold/10 p-3 text-sm text-gold">{status}</p>}
       {error && <p className="mt-4 border border-claret/35 bg-claret/10 p-3 text-sm text-claret">{error}</p>}
       <div className="mt-5 grid gap-3 sm:grid-cols-3">
-        <UploadButton icon={Camera} label={t('uploadBottle', language)} accept="image/*" capture="environment" onFile={onIdentify} />
+        <UploadButton icon={Camera} label={t('uploadBottle', language)} accept="image/*" onFile={onIdentify} />
         <UploadButton icon={Upload} label={t('uploadList', language)} accept="image/*" onFile={onIdentify} />
         <button className="manual-button" type="button" onClick={onManual}><Plus size={18} />{t('addManual', language)}</button>
       </div>
@@ -427,8 +442,8 @@ function ScanPanel({ language, status, error, onIdentify, onManual }: { language
   );
 }
 
-function UploadButton({ icon: Icon, label, accept, capture, onFile }: { icon: typeof Camera; label: string; accept: string; capture?: 'environment'; onFile: (file: File | null) => void }) {
-  return <label className="manual-button cursor-pointer"><Icon size={18} /><span>{label}</span><input type="file" className="sr-only" accept={accept} capture={capture} onChange={(event) => onFile(event.target.files?.[0] || null)} /></label>;
+function UploadButton({ icon: Icon, label, accept, onFile }: { icon: typeof Camera; label: string; accept: string; onFile: (file: File | null) => void }) {
+  return <label className="manual-button cursor-pointer"><Icon size={18} /><span>{label}</span><input type="file" className="sr-only" accept={accept} aria-label={label} onChange={(event) => onFile(event.target.files?.[0] || null)} /></label>;
 }
 
 function WineForm({ draft, language, isAiDraft, setDraft, onPhoto, onImageOpen, onSave, onCancel }: { draft: WineDraft; language: Language; isAiDraft: boolean; setDraft: React.Dispatch<React.SetStateAction<WineDraft>>; onPhoto: (file: File) => void; onImageOpen: (src: string) => void; onSave: () => void; onCancel: () => void }) {
@@ -455,14 +470,14 @@ function WineForm({ draft, language, isAiDraft, setDraft, onPhoto, onImageOpen, 
               <label className="grid h-full min-h-72 cursor-pointer place-items-center gap-3">
                 <Camera size={34} />
                 <span>{t('bottlePhoto', language)}</span>
-                <input type="file" className="sr-only" accept="image/*" onChange={(event) => event.target.files?.[0] && onPhoto(event.target.files[0])} />
+                <input type="file" className="sr-only" accept="image/*" aria-label={t('bottlePhoto', language)} onChange={(event) => event.target.files?.[0] && onPhoto(event.target.files[0])} />
               </label>
             )}
           </div>
           {draft.photo && (
             <div className="photo-actions">
               <button className="small-button" type="button" onClick={() => onImageOpen(draft.photo || '')}><Camera size={15} />{t('enlargeImage', language)}</button>
-              <label className="small-button cursor-pointer"><Upload size={15} />{t('changePhoto', language)}<input type="file" className="sr-only" accept="image/*" onChange={(event) => {
+              <label className="small-button cursor-pointer"><Upload size={15} />{t('changePhoto', language)}<input type="file" className="sr-only" accept="image/*" aria-label={t('changePhoto', language)} onChange={(event) => {
                 if (event.target.files?.[0]) {
                   setPhotoFailed(false);
                   onPhoto(event.target.files[0]);
@@ -502,7 +517,7 @@ function WineForm({ draft, language, isAiDraft, setDraft, onPhoto, onImageOpen, 
   );
 }
 
-function WineGrid({ wines, language, onEdit, onDelete, onImageOpen }: { wines: Wine[]; language: Language; onEdit: (wine: Wine) => void; onDelete: (id: string) => void; onImageOpen: (src: string, alt: string) => void }) {
+function WineGrid({ wines, language, onEdit, onDelete, onToggleFavourite, onImageOpen }: { wines: Wine[]; language: Language; onEdit: (wine: Wine) => void; onDelete: (id: string) => void; onToggleFavourite: (id: string) => void; onImageOpen: (src: string, alt: string) => void }) {
   return (
     <div className="grid gap-4 md:grid-cols-2">
       {wines.map((wine) => (
@@ -512,7 +527,7 @@ function WineGrid({ wines, language, onEdit, onDelete, onImageOpen }: { wines: W
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>
-                  <h3 className="font-serif text-2xl">{text(wine.name, language)}</h3>
+                  <h3 className="flex flex-wrap items-center gap-2 font-serif text-2xl">{text(wine.name, language)}{wine.favourite && <span className="favourite-badge"><Star size={14} fill="currentColor" />{t('favouriteBottle', language)}</span>}</h3>
                   <p className="text-sm text-cellar-700 dark:text-linen/70">{wine.producer} · {wine.vintage}</p>
                 </div>
                 <span className={`badge rarity-${wine.rarity}`}>{rarityLabels[wine.rarity][language]}</span>
@@ -525,7 +540,8 @@ function WineGrid({ wines, language, onEdit, onDelete, onImageOpen }: { wines: W
               </div>
               <p className="mt-4 line-clamp-2 text-sm text-cellar-700 dark:text-linen/70">{text(wine.tastingProfile, language)}</p>
               {wine.warningsOrUncertainty && <p className="mt-3 text-xs text-claret">{wine.warningsOrUncertainty}</p>}
-              <div className="mt-4 flex gap-2">
+              <div className="mt-4 flex flex-wrap gap-2">
+                <button className="small-button" onClick={() => onToggleFavourite(wine.id)} aria-pressed={Boolean(wine.favourite)}><Star size={15} fill={wine.favourite ? 'currentColor' : 'none'} />{wine.favourite ? t('unmarkFavourite', language) : t('markFavourite', language)}</button>
                 <button className="small-button" onClick={() => onEdit(wine)}><Edit3 size={15} />{t('edit', language)}</button>
                 <button className="small-button danger" onClick={() => onDelete(wine.id)}><Trash2 size={15} />{t('delete', language)}</button>
               </div>
@@ -588,7 +604,7 @@ function Memories({ wines, language, onAddMemory }: { wines: Wine[]; language: L
         <label className="form-label sm:col-span-2">{t('memoryStory', language)}<textarea value={story} onChange={(event) => setStory(event.target.value)} /></label>
         <button className="primary-button" onClick={save}><Save size={18} />{t('saveMemory', language)}</button>
       </EntryForm>
-      {memories.length === 0 && <p className="lux-panel text-cellar-700 dark:text-linen/70">{t('noEntries', language)}</p>}
+      {memories.length === 0 && <p className="lux-panel text-cellar-700 dark:text-linen/70">{t('noMemories', language)}</p>}
       <div className="relative space-y-4 before:absolute before:left-4 before:top-2 before:h-full before:w-px before:bg-gold/35">
         {memories.map(({ wine, memory }) => (
           <article key={memory.id} className="relative ml-10 lux-panel">
@@ -648,7 +664,7 @@ function Analytics({ language, analytics, valueByRegion, rarityData }: { languag
   );
 }
 
-function FamilyDashboard({ language, sharedWithYimo, familyShared, favouriteShared }: { language: Language; sharedWithYimo: Wine[]; familyShared: Wine[]; favouriteShared?: Wine }) {
+function FamilyDashboard({ language, sharedWithYimo, familyShared, favouriteBottle }: { language: Language; sharedWithYimo: Wine[]; familyShared: Wine[]; favouriteBottle?: Wine }) {
   return (
     <section className="lux-panel">
       <SectionTitle icon={Users} title={t('sharedTitle', language)} />
@@ -656,7 +672,11 @@ function FamilyDashboard({ language, sharedWithYimo, familyShared, favouriteShar
         <Metric label={language === 'zh' ? '与奕谟共享' : language === 'fr' ? 'Partagés avec Yimo' : 'Shared with Yimo'} value={sharedWithYimo.length} />
         <Metric label={language === 'zh' ? '与家人共享' : language === 'fr' ? 'Partagés en famille' : 'Shared with family'} value={familyShared.length} />
       </div>
-      {favouriteShared && <div className="mt-4 border border-gold/25 bg-gold/10 p-4"><p className="text-sm text-gold">{language === 'zh' ? '最爱的共享酒款' : language === 'fr' ? 'Bouteille partagée favorite' : 'Favourite shared bottle'}</p><p className="mt-1 font-serif text-2xl">{text(favouriteShared.name, language)}</p><p className="text-sm text-cellar-700 dark:text-linen/70">{favouriteShared.sharedWith.join(', ')}</p></div>}
+      <div className="mt-4 border border-gold/25 bg-gold/10 p-4">
+        <p className="text-sm text-gold">{t('favouriteBottle', language)}</p>
+        <p className="mt-1 break-words font-serif text-2xl">{favouriteBottle ? text(favouriteBottle.name, language) : t('noFavouriteBottle', language)}</p>
+        {favouriteBottle && <p className="text-sm text-cellar-700 dark:text-linen/70">{favouriteBottle.sharedWith.join(', ')}</p>}
+      </div>
     </section>
   );
 }
@@ -694,15 +714,15 @@ function Legacy({ wines, language }: { wines: Wine[]; language: Language }) {
   );
 }
 
-function EmptyState({ language, loadPreview, onManual }: { language: Language; loadPreview: () => void; onManual: () => void }) {
-  return <div className="empty-state"><WineIcon size={42} /><h3>{t('emptyTitle', language)}</h3><p>{t('emptyBody', language)}</p><div className="mt-5 flex flex-wrap justify-center gap-3"><button className="primary-button" onClick={onManual}><Plus size={18} />{t('addManual', language)}</button><button className="manual-button" onClick={loadPreview}><Sparkles size={18} />{t('sampleData', language)}</button></div></div>;
+function EmptyState({ language, onManual }: { language: Language; onManual: () => void }) {
+  return <div className="empty-state"><WineIcon size={46} /><h3>{t('emptyTitle', language)}</h3><p>{t('emptyBody', language)}</p><div className="mt-5 flex flex-wrap justify-center gap-3"><button className="primary-button" onClick={onManual}><Plus size={18} />{t('addFirstWine', language)}</button></div></div>;
 }
 
-function ImageLightbox({ image, onClose }: { image: { src: string; alt: string }; onClose: () => void }) {
+function ImageLightbox({ image, language, onClose }: { image: { src: string; alt: string }; language: Language; onClose: () => void }) {
   return (
     <div className="lightbox" role="dialog" aria-modal="true" aria-label={image.alt} onClick={onClose}>
       <div className="lightbox-panel" onClick={(event) => event.stopPropagation()}>
-        <button className="icon-button absolute right-3 top-3" type="button" onClick={onClose} aria-label="Close"><X size={18} /></button>
+        <button className="icon-button absolute right-3 top-3" type="button" onClick={onClose} aria-label={t('close', language)}><X size={18} /></button>
         <img src={image.src} alt={image.alt} />
       </div>
     </div>
@@ -729,7 +749,7 @@ function TagPicker({ language, selected, setSelected }: { language: Language; se
 }
 
 function TextField({ label, value, onChange, type = 'text', required = false }: { label: string; value: string; onChange: (value: string) => void; type?: string; required?: boolean }) {
-  return <label className="form-label">{label}<input required={required} type={type} value={value} onChange={(event) => onChange(event.target.value)} /></label>;
+  return <label className="form-label">{label}<input required={required} aria-label={label} type={type} value={value} onChange={(event) => onChange(event.target.value)} /></label>;
 }
 
 function SectionTitle({ icon: Icon, title }: { icon: typeof WineIcon; title: string }) {
@@ -802,6 +822,7 @@ function draftToWine(draft: WineDraft, existingWine?: Wine): Wine {
     location: draft.location,
     rarity: draft.rarity,
     consumed: draft.consumed,
+    favourite: existingWine?.favourite,
     sharedWith: splitList(draft.sharedWith),
     tastings: existingWine?.tastings || [],
     memories: existingWine?.memories || [],
@@ -868,6 +889,7 @@ function wineToSummary(wine: Wine, language: Language): WineSummary {
     notes: text(wine.notes, language),
     location: wine.location,
     rarity: wine.rarity,
+    favourite: wine.favourite,
     sharedWith: wine.sharedWith,
     tastings: wine.tastings.map((tasting) => ({
       rating: tasting.rating,

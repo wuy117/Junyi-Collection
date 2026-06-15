@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import { sampleWines } from '../data/sampleWines';
 import { loadWines, loadWinesAsync, saveWines } from '../lib/storage';
 import type { Wine } from '../types/wine';
 
@@ -27,11 +26,9 @@ export function useCollection() {
 
   const deleteWine = (id: string) => updateWines(wines.filter((wine) => wine.id !== id));
 
-  const loadPreview = () => {
-    const sampleIds = new Set(sampleWines.map((wine) => wine.id));
-    const next = [...sampleWines, ...wines.filter((wine) => !sampleIds.has(wine.id))];
-    updateWines(next);
-    return { added: sampleWines.filter((wine) => !wines.some((item) => item.id === wine.id)).length, total: next.length };
+  const toggleFavourite = (id: string) => {
+    const selected = wines.find((wine) => wine.id === id);
+    updateWines(wines.map((wine) => ({ ...wine, favourite: selected?.favourite ? false : wine.id === id })));
   };
 
   const analytics = useMemo(() => {
@@ -54,7 +51,7 @@ export function useCollection() {
     };
   }, [wines]);
 
-  return { wines, analytics, addWine, updateWine, deleteWine, loadPreview };
+  return { wines, analytics, addWine, updateWine, deleteWine, toggleFavourite };
 }
 
 function mode(values: string[]) {

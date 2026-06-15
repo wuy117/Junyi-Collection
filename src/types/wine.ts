@@ -53,6 +53,7 @@ export interface Wine {
   location: string;
   rarity: Rarity;
   consumed: boolean;
+  favourite?: boolean;
   sharedWith: string[];
   tastings: TastingEntry[];
   memories: Memory[];

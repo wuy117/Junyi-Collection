@@ -23,6 +23,16 @@ textarea {
   font: inherit;
 }
 
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+label:focus-within {
+  outline: 2px solid rgba(217, 180, 108, 0.95);
+  outline-offset: 3px;
+}
+
 .nav-button {
   @apply inline-flex h-10 items-center gap-2 border border-transparent px-3 text-sm text-cellar-700 transition hover:border-gold/35 hover:text-cellar-950 dark:text-linen/70 dark:hover:text-linen;
 }
@@ -106,6 +116,10 @@ textarea {
 
 .badge-gold {
   @apply border-gold/50 bg-gold/15 text-gold;
+}
+
+.favourite-badge {
+  @apply inline-flex items-center gap-1 border border-gold/45 bg-gold/15 px-2 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-gold;
 }
 
 .rarity-common {
@@ -199,6 +213,14 @@ textarea {
   @apply fixed right-4 top-24 z-[70] border border-gold/45 bg-cellar-950 px-4 py-3 text-sm font-semibold text-gold shadow-glow dark:bg-cellar-900;
 }
 
+.father-message {
+  @apply border border-gold/30 bg-white/60 px-5 py-6 shadow-sm dark:bg-white/[0.045];
+}
+
+.father-message p {
+  @apply mx-auto max-w-4xl font-serif text-2xl leading-relaxed text-cellar-950 dark:text-linen;
+}
+
 .lightbox {
   @apply fixed inset-0 z-[90] grid place-items-center bg-cellar-950/90 p-4 backdrop-blur;
 }
@@ -288,5 +310,13 @@ textarea {
   .secondary-button,
   .manual-button {
     @apply h-auto min-h-11 px-4 py-3;
+  }
+
+  .wine-photo {
+    @apply h-52 w-full;
+  }
+
+  .father-message p {
+    @apply text-xl;
   }
 }

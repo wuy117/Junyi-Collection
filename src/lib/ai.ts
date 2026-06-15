@@ -80,6 +80,7 @@ export type WineSummary = {
   notes: string;
   location: string;
   rarity: string;
+  favourite?: boolean;
   sharedWith: string[];
   tastings: Array<{ rating: number; notes: string; tags: string[]; date: string }>;
   memories: Array<{ title: string; story: string; people: string[]; date: string }>;
